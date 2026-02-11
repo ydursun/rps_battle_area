@@ -1,0 +1,30 @@
+name: rps_battle_arena
+description: "RPS Battle Arena - Rock Paper Scissors arena battle game"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flame: ^1.35.0
+  google_fonts: ^8.0.1
+  audioplayers: ^6.5.1
+  path_provider: ^2.1.5
+  firebase_core: ^3.13.0
+  firebase_database: ^11.3.10
+  firebase_auth: ^5.7.0
+  share_plus: ^10.1.4
+  uuid: ^4.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
