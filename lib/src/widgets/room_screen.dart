@@ -68,13 +68,18 @@ class _RoomScreenState extends State<RoomScreen> {
 
   Future<void> _createRoom() async {
     setState(() => _isLoading = true);
-    final s = widget.game.settings;
-    await _rm.createRoom(
-      entityCount: s.playerCount,
-      gameMode: s.gameMode,
-      timerDuration: s.timerDuration,
-    );
-    setState(() => _isLoading = false);
+    try {
+      final s = widget.game.settings;
+      await _rm.createRoom(
+        entityCount: s.playerCount,
+        gameMode: s.gameMode,
+        timerDuration: s.timerDuration,
+      );
+    } catch (e) {
+      _onError('Oda oluşturulamadı: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _joinRoom() async {
@@ -84,8 +89,13 @@ class _RoomScreenState extends State<RoomScreen> {
       return;
     }
     setState(() => _isLoading = true);
-    await _rm.joinRoom(code);
-    setState(() => _isLoading = false);
+    try {
+      await _rm.joinRoom(code);
+    } catch (e) {
+      _onError('Odaya katılınamadı: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _leaveRoom() async {

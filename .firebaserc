@@ -1,0 +1,11 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "project": {
+    "default": "rps-battle-arena-d7527"
+  },
+  "projects": {
+    "default": "rps-battle-arena-d7527"
+  }
+}

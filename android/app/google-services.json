@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "995809866318",
+    "firebase_url": "https://rps-battle-arena-d7527-default-rtdb.firebaseio.com",
+    "project_id": "rps-battle-arena-d7527",
+    "storage_bucket": "rps-battle-arena-d7527.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:995809866318:android:af0317a74606a3049b091f",
+        "android_client_info": {
+          "package_name": "com.example.rps_battle_arena"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAd-btp90ejX06U1U2YDcZ14A2zBfQncX8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
 
 import '../game_state.dart';
 
@@ -114,10 +115,17 @@ class RoomManager {
   StreamSubscription? _roomSubscription;
   StreamSubscription? _gameStateSubscription;
 
+  /// Fallback local UID when Firebase Auth fails (e.g. macOS keychain issue)
+  String? _localUid;
+
   String? get currentRoomCode => _currentRoomCode;
-  String get currentUid => _auth.currentUser?.uid ?? '';
+  String get currentUid =>
+      _auth.currentUser?.uid ?? _localUid ?? '';
   String get displayName =>
-      _auth.currentUser?.displayName ?? 'Oyuncu ${currentUid.substring(0, 4)}';
+      _auth.currentUser?.displayName ??
+      (_localUid != null
+          ? 'Oyuncu ${_localUid!.substring(0, 4)}'
+          : 'Oyuncu');
 
   // Callbacks
   void Function(RoomData)? onRoomUpdated;
@@ -125,9 +133,22 @@ class RoomManager {
   void Function(String)? onError;
 
   Future<void> signInAnonymously() async {
-    if (_auth.currentUser == null) {
+    if (_auth.currentUser != null) return;
+    if (_localUid != null) return; // already using local fallback
+
+    try {
       await _auth.signInAnonymously();
+    } catch (e) {
+      // Firebase Auth keychain error on macOS - use local UUID fallback
+      debugPrint('Firebase Auth failed, using local UID: $e');
+      _localUid ??= _generateLocalUid();
     }
+  }
+
+  String _generateLocalUid() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final rng = Random();
+    return List.generate(20, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
   String _generateRoomCode() {
