@@ -410,6 +410,62 @@ class _RoomScreenState extends State<RoomScreen> {
             ],
           ),
 
+          const SizedBox(height: 12),
+
+          // Speed selection (host only)
+          if (isHost) ...[
+            Text(
+              L.speed,
+              style: GoogleFonts.orbitron(
+                fontSize: 11,
+                color: Colors.white38,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: SpeedLevel.values.map((level) {
+                final isSelected =
+                    widget.game.settings.speedLevel == level;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: GestureDetector(
+                    onTap: () =>
+                        widget.game.settings.speedLevel = level,
+                    child: Container(
+                      width: 70,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? accentColor.withAlpha(60)
+                            : Colors.white.withAlpha(10),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected
+                              ? accentColor
+                              : Colors.white24,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${level.emoji} ${level.label}',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? accentColor
+                              : Colors.white54,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+
           const SizedBox(height: 16),
 
           // Players list

@@ -46,3 +46,25 @@ const List<int> playerCountOptions = [15, 30, 45];
 
 // Timer duration options (seconds)
 const List<int> timerDurationOptions = [30, 60, 90, 180];
+
+// Arena obstacles
+const double innerWallMinLength = 60.0;
+const double innerWallMaxLength = 180.0;
+const double innerWallWidth = 8.0;
+const double mudZoneMinRadius = 60.0;
+const double mudZoneMaxRadius = 100.0;
+const double mudSpeedMultiplier = 0.7;
+const double mudAngleDeviation = 0.45; // ~25 degrees max
+const double teleportZoneRadius = 40.0;
+const double teleportCooldown = 1.0; // seconds
+const double bushZoneMinRadius = 50.0;
+const double bushZoneMaxRadius = 80.0;
+const double bushHiddenDetectionRadius = 50.0;
+
+// Power-ups
+const double powerUpRadius = 22.0;
+const double powerUpSpawnMinInterval = 8.0;
+const double powerUpSpawnMaxInterval = 15.0;
+const int maxActivePowerUps = 2;
+const double powerUpDuration = 5.0;
+const double speedBoostMultiplier = 2.0;

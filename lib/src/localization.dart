@@ -96,6 +96,34 @@ class L {
   static String get playAgain =>
       _currentLanguage == AppLanguage.tr ? 'TEKRAR OYNA' : 'PLAY AGAIN';
 
+  // Speed
+  static String get speed =>
+      _currentLanguage == AppLanguage.tr ? 'HIZ' : 'SPEED';
+
+  // Arena colors
+  static String get bgColorLabel =>
+      _currentLanguage == AppLanguage.tr ? 'ZEMİN RENGİ' : 'BG COLOR';
+  static String get wallColorLabel =>
+      _currentLanguage == AppLanguage.tr ? 'DUVAR RENGİ' : 'WALL COLOR';
+
+  // Arena obstacles
+  static String get arenaObstacles =>
+      _currentLanguage == AppLanguage.tr ? 'ARENA ZORLUK' : 'ARENA DIFFICULTY';
+  static String get innerWalls =>
+      _currentLanguage == AppLanguage.tr ? 'DUVARLAR' : 'WALLS';
+  static String get mudZones =>
+      _currentLanguage == AppLanguage.tr ? 'ÇAMUR' : 'MUD';
+  static String get teleport =>
+      _currentLanguage == AppLanguage.tr ? 'IŞINLANMA' : 'TELEPORT';
+  static String get bushZones =>
+      _currentLanguage == AppLanguage.tr ? 'ÇALILIK' : 'BUSH';
+
+  // Power-ups
+  static String get shieldActive =>
+      _currentLanguage == AppLanguage.tr ? 'KALKAN' : 'SHIELD';
+  static String get speedBoostActive =>
+      _currentLanguage == AppLanguage.tr ? 'HIZ X2' : 'SPEED X2';
+
   // Multiplayer
   static String get multiplayer => 'MULTIPLAYER';
 

@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:flutter/foundation.dart';
 
 import 'config.dart';
@@ -66,12 +68,78 @@ class GameSettings extends ChangeNotifier {
     }
   }
 
-  // Power-ups (future feature)
+  // Speed level
+  SpeedLevel _speedLevel = SpeedLevel.normal;
+  SpeedLevel get speedLevel => _speedLevel;
+  set speedLevel(SpeedLevel v) {
+    if (_speedLevel != v) {
+      _speedLevel = v;
+      notifyListeners();
+    }
+  }
+
+  // Power-ups
   bool _powerUpsEnabled = false;
   bool get powerUpsEnabled => _powerUpsEnabled;
   set powerUpsEnabled(bool v) {
     if (_powerUpsEnabled != v) {
       _powerUpsEnabled = v;
+      notifyListeners();
+    }
+  }
+
+  // Custom colors
+  Color _customBgColor = const Color(0xFF0D1117);
+  Color get customBgColor => _customBgColor;
+  set customBgColor(Color v) {
+    if (_customBgColor != v) {
+      _customBgColor = v;
+      notifyListeners();
+    }
+  }
+
+  Color _customWallColor = const Color(0xFF2A3A5C);
+  Color get customWallColor => _customWallColor;
+  set customWallColor(Color v) {
+    if (_customWallColor != v) {
+      _customWallColor = v;
+      notifyListeners();
+    }
+  }
+
+  // Arena obstacles
+  ObstacleAmount _wallAmount = ObstacleAmount.none;
+  ObstacleAmount get wallAmount => _wallAmount;
+  set wallAmount(ObstacleAmount v) {
+    if (_wallAmount != v) {
+      _wallAmount = v;
+      notifyListeners();
+    }
+  }
+
+  ObstacleAmount _mudAmount = ObstacleAmount.none;
+  ObstacleAmount get mudAmount => _mudAmount;
+  set mudAmount(ObstacleAmount v) {
+    if (_mudAmount != v) {
+      _mudAmount = v;
+      notifyListeners();
+    }
+  }
+
+  bool _teleportEnabled = false;
+  bool get teleportEnabled => _teleportEnabled;
+  set teleportEnabled(bool v) {
+    if (_teleportEnabled != v) {
+      _teleportEnabled = v;
+      notifyListeners();
+    }
+  }
+
+  ObstacleAmount _bushAmount = ObstacleAmount.none;
+  ObstacleAmount get bushAmount => _bushAmount;
+  set bushAmount(ObstacleAmount v) {
+    if (_bushAmount != v) {
+      _bushAmount = v;
       notifyListeners();
     }
   }

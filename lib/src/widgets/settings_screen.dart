@@ -176,38 +176,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Divider(color: Colors.white.withAlpha(25)),
               const SizedBox(height: 16),
 
-              // Power-ups toggle (coming soon)
+              // Power-ups toggle
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        L.powerUps,
-                        style: GoogleFonts.orbitron(
-                          fontSize: 13,
-                          color: Colors.white24,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        L.comingSoon,
-                        style: GoogleFonts.orbitron(
-                          fontSize: 9,
-                          color: Colors.white12,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    L.powerUps,
+                    style: GoogleFonts.orbitron(
+                      fontSize: 13,
+                      color: Colors.white54,
+                      letterSpacing: 2,
+                    ),
                   ),
                   Switch(
-                    value: false,
-                    onChanged: null,
+                    value: s.powerUpsEnabled,
+                    onChanged: (v) => s.powerUpsEnabled = v,
                     activeThumbColor: accentColor,
-                    inactiveThumbColor: Colors.white12,
-                    inactiveTrackColor: Colors.white.withAlpha(8),
+                    inactiveThumbColor: Colors.white24,
+                    inactiveTrackColor: Colors.white10,
                   ),
                 ],
               ),

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../firebase_options.dart';
 import 'components/arena.dart';
+import 'components/power_up.dart';
 import 'components/rps_entity.dart';
 import 'components/smoke_effect.dart';
 import 'config.dart';
@@ -33,6 +34,7 @@ class RpsGame extends FlameGame
   RpsType? playerOriginalType;
 
   double currentSpeed = initialEntitySpeed;
+  double _maxSpeed = maxEntitySpeed;
   double gameTimer = 0;
   double countdownTimer = 0;
   bool isCountingDown = false;
@@ -47,12 +49,17 @@ class RpsGame extends FlameGame
   bool isMultiplayer = false;
   bool isMultiplayerHost = false;
   double _syncTimer = 0;
-  static const double _syncInterval = 0.1; // 10Hz broadcast rate
+  static const double _syncInterval = 0.1;
   Map<String, List<double>> _remoteInputs = {};
 
   late Arena arena;
 
   final Set<LogicalKeyboardKey> _keysPressed = {};
+
+  // Power-up system
+  final List<PowerUp> activePowerUps = [];
+  double _powerUpSpawnTimer = 0;
+  final Random _powerUpRng = Random();
 
   RpsGame() {
     soundManager = SoundManager(settings: settings);
@@ -61,7 +68,6 @@ class RpsGame extends FlameGame
 
   PlayState get playState => _playState;
   set playState(PlayState state) {
-    // Remove previous overlay
     overlays.remove(_playState.name);
     overlays.remove('pauseButton');
     overlays.remove('hud');
@@ -83,7 +89,6 @@ class RpsGame extends FlameGame
   }
 
   void showRoomScreen() {
-    // Remove current overlays
     overlays.remove(_playState.name);
     overlays.remove('pauseButton');
     overlays.remove('hud');
@@ -133,9 +138,7 @@ class RpsGame extends FlameGame
       roomData: roomData,
     );
 
-    // Setup multiplayer listeners
     if (isMultiplayerHost) {
-      // Host listens to player inputs
       roomManager.listenToInputs((inputs) {
         _remoteInputs = {};
         inputs.forEach((uid, value) {
@@ -149,11 +152,9 @@ class RpsGame extends FlameGame
         });
       });
     } else {
-      // Non-host listens to entity states from host
       roomManager.listenToEntityStates((states) {
         _applyNetworkEntityStates(states);
       });
-      // Listen to game info (timer, counts, winner)
       roomManager.listenToGameInfo((info) {
         _applyNetworkGameInfo(info);
       });
@@ -170,22 +171,28 @@ class RpsGame extends FlameGame
   }) {
     _stopGame();
 
+    // Recreate arena
+    world.remove(arena);
+    arena = Arena();
+    world.add(arena);
+
     setLanguage(settings.language);
     gameMode = mode;
-    currentSpeed = initialEntitySpeed;
+
+    // Use speed level settings
+    currentSpeed = settings.speedLevel.initialSpeed;
+    _maxSpeed = settings.speedLevel.maxSpeed;
+
     gameTimer = gameMode == GameMode.timed ? duration.toDouble() : 0;
     winnerType = null;
     playerWon = null;
 
-    // Use shared seed for multiplayer, random otherwise
     final rng = Random(seed ?? Random().nextInt(1 << 30));
 
-    // Determine player type
     final playerType =
         chosenType ?? RpsType.values[rng.nextInt(RpsType.values.length)];
     playerOriginalType = playerType;
 
-    // Calculate entity distribution
     final totalCount = entityCount;
     final perType = totalCount ~/ 3;
     final remainder = totalCount % 3;
@@ -205,15 +212,12 @@ class RpsGame extends FlameGame
     }
     typeList.shuffle(rng);
 
-    // Build player-entity assignments for multiplayer
-    // Each real player gets one entity assigned to them
     final Map<String, int> playerEntityMap = {};
     if (isMultiplayer && roomData != null) {
       int assignIdx = 0;
       for (final entry in roomData.players.entries) {
         final uid = entry.key;
         final pInfo = entry.value;
-        // Find an entity matching their chosen type
         final pType = pInfo.chosenType ?? playerType;
         int foundIdx = -1;
         for (int i = assignIdx; i < typeList.length; i++) {
@@ -223,7 +227,6 @@ class RpsGame extends FlameGame
           }
         }
         if (foundIdx == -1) {
-          // Fallback: assign next available and change its type
           for (int i = 0; i < typeList.length; i++) {
             if (!playerEntityMap.containsValue(i)) {
               foundIdx = i;
@@ -238,17 +241,14 @@ class RpsGame extends FlameGame
         assignIdx++;
       }
     } else {
-      // Single player: ensure player type is in list
       final playerIndex = typeList.indexWhere((t) => t == playerType);
       if (playerIndex == -1) {
         typeList[0] = playerType;
       }
     }
 
-    // Generate non-overlapping spawn positions
     final positions = _generateSpawnPositions(totalCount, rng);
 
-    // Create entities
     bool playerPlaced = false;
     final myUid = isMultiplayer ? roomManager.currentUid : null;
 
@@ -257,7 +257,6 @@ class RpsGame extends FlameGame
       String? ownerUid;
 
       if (isMultiplayer) {
-        // Check if this entity is assigned to any player
         final assignedUid = playerEntityMap.entries
             .where((e) => e.value == i)
             .map((e) => e.key)
@@ -288,7 +287,7 @@ class RpsGame extends FlameGame
 
     _updateCounts();
 
-    // Speed increase timer (only host runs simulation in multiplayer)
+    // Speed increase timer
     if (!isMultiplayer || isMultiplayerHost) {
       world.add(TimerComponent(
         period: speedIncreaseInterval,
@@ -297,11 +296,16 @@ class RpsGame extends FlameGame
       ));
     }
 
-    // Start countdown
+    // Power-up spawn timer
+    if (settings.powerUpsEnabled && (!isMultiplayer || isMultiplayerHost)) {
+      _powerUpSpawnTimer = powerUpSpawnMinInterval +
+          _powerUpRng.nextDouble() *
+              (powerUpSpawnMaxInterval - powerUpSpawnMinInterval);
+    }
+
     isCountingDown = true;
     countdownTimer = 3.0;
 
-    // Remove room overlay if present
     overlays.remove('room');
 
     playState = PlayState.playing;
@@ -338,6 +342,12 @@ class RpsGame extends FlameGame
     entities.clear();
     playerEntity = null;
 
+    // Remove power-ups
+    for (final pu in activePowerUps) {
+      pu.removeFromParent();
+    }
+    activePowerUps.clear();
+
     world.children
         .whereType<TimerComponent>()
         .toList()
@@ -350,9 +360,9 @@ class RpsGame extends FlameGame
   }
 
   void _increaseSpeed() {
-    if (currentSpeed < maxEntitySpeed) {
+    if (currentSpeed < _maxSpeed) {
       currentSpeed =
-          (currentSpeed + speedIncrement).clamp(0, maxEntitySpeed);
+          (currentSpeed + speedIncrement).clamp(0, _maxSpeed);
       for (final entity in entities) {
         entity.applySpeed(currentSpeed);
       }
@@ -412,7 +422,6 @@ class RpsGame extends FlameGame
       soundManager.playLose();
     }
 
-    // Broadcast game over if host
     if (isMultiplayer && isMultiplayerHost && isFirebaseReady) {
       roomManager.broadcastGameInfo({
         'gameTimer': gameTimer,
@@ -454,15 +463,13 @@ class RpsGame extends FlameGame
       return;
     }
 
-    // Handle keyboard input for player
     _handleKeyboardInput(dt);
 
-    // Multiplayer: host applies remote player inputs
     if (isMultiplayer && isMultiplayerHost) {
       _applyRemoteInputs(dt);
     }
 
-    // Handle timed mode (only host or single player)
+    // Timed mode
     if (!isMultiplayer || isMultiplayerHost) {
       if (gameMode == GameMode.timed) {
         gameTimer -= dt;
@@ -491,7 +498,17 @@ class RpsGame extends FlameGame
       }
     }
 
-    // Multiplayer: host broadcasts state at ~10Hz
+    // Power-up spawning
+    if (settings.powerUpsEnabled && (!isMultiplayer || isMultiplayerHost)) {
+      _updatePowerUpSpawning(dt);
+    }
+
+    // Check power-up collection by player
+    if (settings.powerUpsEnabled && playerEntity != null) {
+      _checkPowerUpCollection();
+    }
+
+    // Multiplayer sync
     if (isMultiplayer && isMultiplayerHost && isFirebaseReady) {
       _syncTimer += dt;
       if (_syncTimer >= _syncInterval) {
@@ -501,12 +518,51 @@ class RpsGame extends FlameGame
     }
   }
 
-  /// Host applies inputs from remote players to their assigned entities
+  void _updatePowerUpSpawning(double dt) {
+    _powerUpSpawnTimer -= dt;
+    if (_powerUpSpawnTimer <= 0 && activePowerUps.length < maxActivePowerUps) {
+      _spawnPowerUp();
+      _powerUpSpawnTimer = powerUpSpawnMinInterval +
+          _powerUpRng.nextDouble() *
+              (powerUpSpawnMaxInterval - powerUpSpawnMinInterval);
+    }
+  }
+
+  void _spawnPowerUp() {
+    final type = PowerUpType.values[_powerUpRng.nextInt(PowerUpType.values.length)];
+    final margin = wallThickness + powerUpRadius * 2;
+    final pos = Vector2(
+      margin + _powerUpRng.nextDouble() * (gameWidth - margin * 2),
+      margin + _powerUpRng.nextDouble() * (gameHeight - margin * 2),
+    );
+
+    final powerUp = PowerUp(type: type, position: pos);
+    activePowerUps.add(powerUp);
+    world.add(powerUp);
+  }
+
+  void _checkPowerUpCollection() {
+    final player = playerEntity!;
+    final collected = <PowerUp>[];
+
+    for (final pu in activePowerUps) {
+      if (pu.containsPoint(player.position)) {
+        player.applyPowerUp(pu.type);
+        collected.add(pu);
+        soundManager.playConversion(); // Reuse conversion sound for pickup
+      }
+    }
+
+    for (final pu in collected) {
+      pu.removeFromParent();
+      activePowerUps.remove(pu);
+    }
+  }
+
   void _applyRemoteInputs(double dt) {
     for (final entry in _remoteInputs.entries) {
       final uid = entry.key;
-      final input = entry.value; // [dx, dy]
-      // Find the entity owned by this player
+      final input = entry.value;
       final entity = entities.where((e) => e.ownerUid == uid).firstOrNull;
       if (entity == null) continue;
 
@@ -524,7 +580,6 @@ class RpsGame extends FlameGame
     }
   }
 
-  /// Host broadcasts all entity states to Firebase
   void _broadcastState() {
     final states = <List<double>>[];
     for (final entity in entities) {
@@ -532,7 +587,6 @@ class RpsGame extends FlameGame
     }
     roomManager.broadcastEntityStates(states);
 
-    // Also broadcast game info
     roomManager.broadcastGameInfo({
       'gameTimer': gameTimer,
       'rockCount': rockCount,
@@ -543,7 +597,6 @@ class RpsGame extends FlameGame
     });
   }
 
-  /// Non-host client applies entity states received from host
   void _applyNetworkEntityStates(List<dynamic> states) {
     for (int i = 0; i < states.length && i < entities.length; i++) {
       final s = states[i];
@@ -559,7 +612,6 @@ class RpsGame extends FlameGame
     _updateCounts();
   }
 
-  /// Non-host client applies game info received from host
   void _applyNetworkGameInfo(Map<String, dynamic> info) {
     if (info.containsKey('gameTimer')) {
       gameTimer = (info['gameTimer'] as num).toDouble();
@@ -605,18 +657,20 @@ class RpsGame extends FlameGame
       dx += 1;
     }
 
+    final speedMult = playerEntity!.activePowerUp == PowerUpType.speedBoost
+        ? speedBoostMultiplier
+        : 1.0;
+
     if (dx != 0 || dy != 0) {
       final dir = Vector2(dx, dy).normalized();
-      playerEntity!.velocity = dir * currentSpeed;
+      playerEntity!.velocity = dir * currentSpeed * speedMult;
     } else {
-      // Decelerate when no keys pressed
       playerEntity!.velocity *= 0.92;
       if (playerEntity!.velocity.length < 5) {
         playerEntity!.velocity = Vector2.zero();
       }
     }
 
-    // Broadcast input for multiplayer
     if (isMultiplayer && isFirebaseReady) {
       roomManager.updatePlayerInput(dx, dy);
     }
@@ -645,5 +699,5 @@ class RpsGame extends FlameGame
   }
 
   @override
-  Color backgroundColor() => bgColor;
+  Color backgroundColor() => settings.customBgColor;
 }

@@ -7,6 +7,7 @@ import '../config.dart';
 import '../game_state.dart';
 import '../localization.dart';
 import '../rps_game.dart';
+// PowerUpType accessed via game_state.dart
 
 class HudOverlay extends StatefulWidget {
   final RpsGame game;
@@ -126,6 +127,57 @@ class _HudOverlayState extends State<HudOverlay> {
             ),
           ),
         ),
+
+        // Bottom-left: active power-up indicator
+        if (g.playerEntity?.activePowerUp != null)
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: g.playerEntity!.activePowerUp == PowerUpType.shield
+                    ? Colors.blue.withAlpha(60)
+                    : Colors.amber.withAlpha(60),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: g.playerEntity!.activePowerUp == PowerUpType.shield
+                      ? Colors.blue.withAlpha(150)
+                      : Colors.amber.withAlpha(150),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    g.playerEntity!.activePowerUp!.emoji,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    g.playerEntity!.activePowerUp == PowerUpType.shield
+                        ? L.shieldActive
+                        : L.speedBoostActive,
+                    style: GoogleFonts.orbitron(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${g.playerEntity!.powerUpTimer.ceil()}s',
+                    style: GoogleFonts.orbitron(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
         // Top-right: timer (timed mode only)
         if (g.gameMode == GameMode.timed)
