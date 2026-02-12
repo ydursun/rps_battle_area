@@ -1,11 +1,14 @@
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'game_settings.dart';
+
+// Conditional import for dart:io (unavailable on web)
+import 'sound_manager_io.dart' if (dart.library.html) 'sound_manager_web.dart'
+    as platform;
 
 class SoundManager {
   final GameSettings settings;
@@ -17,36 +20,27 @@ class SoundManager {
   final AudioPlayer _countdownPlayer = AudioPlayer();
   final AudioPlayer _gameStartPlayer = AudioPlayer();
 
-  late final DeviceFileSource _conversionSource;
-  late final DeviceFileSource _wallHitSource;
-  late final DeviceFileSource _winSource;
-  late final DeviceFileSource _loseSource;
-  late final DeviceFileSource _countdownSource;
-  late final DeviceFileSource _gameStartSource;
+  late final Source _conversionSource;
+  late final Source _wallHitSource;
+  late final Source _winSource;
+  late final Source _loseSource;
+  late final Source _countdownSource;
+  late final Source _gameStartSource;
 
   bool _ready = false;
 
   SoundManager({required this.settings});
 
   Future<void> init() async {
-    final dir = await getApplicationSupportDirectory();
-    final soundDir = Directory('${dir.path}/sounds');
-    if (!soundDir.existsSync()) {
-      soundDir.createSync(recursive: true);
-    }
-
-    _conversionSource = await _writeSound(
-      soundDir,
+    _conversionSource = await _createSource(
       'conversion.wav',
       _generateTone(frequency: 520, durationMs: 80, fadeOut: true),
     );
-    _wallHitSource = await _writeSound(
-      soundDir,
+    _wallHitSource = await _createSource(
       'wall_hit.wav',
       _generateTone(frequency: 330, durationMs: 40, fadeOut: true),
     );
-    _winSource = await _writeSound(
-      soundDir,
+    _winSource = await _createSource(
       'win.wav',
       _generateMelody([
         (freq: 523, ms: 120),
@@ -55,8 +49,7 @@ class SoundManager {
         (freq: 1047, ms: 250),
       ]),
     );
-    _loseSource = await _writeSound(
-      soundDir,
+    _loseSource = await _createSource(
       'lose.wav',
       _generateMelody([
         (freq: 400, ms: 150),
@@ -65,13 +58,11 @@ class SoundManager {
         (freq: 200, ms: 300),
       ]),
     );
-    _countdownSource = await _writeSound(
-      soundDir,
+    _countdownSource = await _createSource(
       'countdown.wav',
       _generateTone(frequency: 880, durationMs: 50, fadeOut: true),
     );
-    _gameStartSource = await _writeSound(
-      soundDir,
+    _gameStartSource = await _createSource(
       'game_start.wav',
       _generateMelody([
         (freq: 440, ms: 100),
@@ -83,14 +74,12 @@ class SoundManager {
     _ready = true;
   }
 
-  Future<DeviceFileSource> _writeSound(
-    Directory dir,
-    String name,
-    Uint8List data,
-  ) async {
-    final file = File('${dir.path}/$name');
-    await file.writeAsBytes(data);
-    return DeviceFileSource(file.path);
+  Future<Source> _createSource(String name, Uint8List data) async {
+    if (kIsWeb) {
+      return BytesSource(data);
+    } else {
+      return await platform.writeDeviceFileSource(name, data);
+    }
   }
 
   void playConversion() => _play(_conversionPlayer, _conversionSource);
@@ -100,7 +89,7 @@ class SoundManager {
   void playCountdownBeep() => _play(_countdownPlayer, _countdownSource);
   void playGameStart() => _play(_gameStartPlayer, _gameStartSource);
 
-  void _play(AudioPlayer player, DeviceFileSource source) {
+  void _play(AudioPlayer player, Source source) {
     if (!_ready || !settings.soundEnabled) return;
     player.setVolume(settings.effectsVolume);
     player.stop();

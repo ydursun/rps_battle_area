@@ -1,12 +1,13 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
   static bool get isConfigured => _isConfigured;
   static const bool _isConfigured = true;
 
   static FirebaseOptions get currentPlatform {
+    if (kIsWeb) return _web;
     switch (defaultTargetPlatform) {
       case TargetPlatform.macOS:
         return _macos;
@@ -18,6 +19,17 @@ class DefaultFirebaseOptions {
         throw UnsupportedError('Unsupported platform');
     }
   }
+
+  static const FirebaseOptions _web = FirebaseOptions(
+    apiKey: 'AIzaSyDWHbpQA9WwlQexUr5lTIl3uNNeTxqcNWE',
+    appId: '1:995809866318:web:f245a06783c2058d9b091f',
+    messagingSenderId: '995809866318',
+    projectId: 'rps-battle-arena-d7527',
+    storageBucket: 'rps-battle-arena-d7527.firebasestorage.app',
+    databaseURL: 'https://rps-battle-arena-d7527-default-rtdb.firebaseio.com',
+    authDomain: 'rps-battle-arena-d7527.firebaseapp.com',
+    measurementId: 'G-TGB3LSDDXH',
+  );
 
   static const FirebaseOptions _macos = FirebaseOptions(
     apiKey: 'AIzaSyB2rd2s9k1ivHkzAsfBKIk5H-mFo7O_RCo',
